@@ -8,10 +8,10 @@ const userSchema = mongoose.Schema({
     type: String,
     maxlength: 50
   },
-  user_email: {
+  email: {
     type: String,
     trim: true,
-    unique: 1
+    unique: 1,
   },
   user_password: {
     type: String,
@@ -26,7 +26,7 @@ const userSchema = mongoose.Schema({
     default: 0
   },
   image: String,
-  tokon: {
+  token: {
     type: String
   },
   tokenExp: {
@@ -34,43 +34,31 @@ const userSchema = mongoose.Schema({
   }
 })
 
-userSchema.pre('save', (next)=>{
+userSchema.pre('save', function(next) {
   var user = this;
-
-  if(user.isModified('user_password')){
-    // 비밀번호를 암호화 시킵니다.
-    bcrypt.genSalt(saltRounds, (err, salt)=>{
-      if(err) return next(err);
-      bcrypt.hash(myPlaintextPassword, salt, (err, hash)=>{
-        // myPlaintextPassword : 암호화 전 비밀번호
-        // hash : 암호화된 비밀번호
-        // 비밀번호 DB에 고정된 길이의 문자열로 변환 후 저장합니다.
-        if(err) return next(err);
-        user.password = hash
-        next()
+  if (user.isModified('user_password')) {
+    // 비밀번호를 암호화
+    bcrypt.genSalt(saltRounds, (err, salt) => {
+      if (err) return next(err);
+      bcrypt.hash(user.user_password, salt, (err, hash) => {
+        if (err) return next(err);
+        user.user_password = hash;
+        next();  // 암호화가 성공적으로 끝났으면 다음 단계로
       });
     });
+  } else {
+    next();
   }
-})
+});
+
+userSchema.methods.comparePassword = function(plainPassword, cb){
+  // plainPassword: 암호화 전 비밀번호   암호화된 비밀번호
+  bcrypt.compare(plainPassword, this.password, function(err, isMatch) {
+    if(err) return cb(err),
+      cb(null, isMatch)
+  })
+}
 
 const User = mongoose.model('User', userSchema);
 
 module.exports = {User}
-
-
-
-
-
-
-    // 비밀번호를 암호화 시킵니다.
-    // bcrypt.genSalt(saltRounds, (err, salt)=>{
-    //   if(err) return next(err);
-    //   bcrypt.hash(myPlaintextPassword, salt, (err, hash)=>{
-    //     // myPlaintextPassword : 암호화 전 비밀번호
-    //     // hash : 암호화된 비밀번호
-    //     // 비밀번호 DB에 고정된 길이의 문자열로 변환 후 저장합니다.
-    //     if(err) return next(err);
-    //     user.password = hash
-    //     next()
-    //   });
-    // });
